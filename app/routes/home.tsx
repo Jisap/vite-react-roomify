@@ -109,7 +109,9 @@ export default function Home() {
               <p>Support JPG, PNG, formats up to 10MB</p>
             </div>
 
-            <Upload />
+            <Upload
+              onComplete={handleUploadComplete}
+            />
           </div>
         </div>
       </section>
