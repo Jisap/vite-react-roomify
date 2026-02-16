@@ -3,6 +3,9 @@ import type { Route } from "./+types/home";
 import { ArrowRight, ArrowUpRight, Clock, Layers } from "lucide-react";
 import Button from "components/ui/Button";
 import Upload from "components/Upload";
+import { useRef, useState } from "react";
+import { useNavigate } from "react-router";
+import { createProject } from "lib/puter.action";
 
 
 export function meta({ }: Route.MetaArgs) {
@@ -12,7 +15,58 @@ export function meta({ }: Route.MetaArgs) {
   ];
 }
 
+
+
 export default function Home() {
+
+  const navigate = useNavigate();
+  const [projects, setProjects] = useState<DesignItem[]>([]);
+  const isCreatingProjectRef = useRef(false);
+
+  // Cuando el componente upload termina de procesar una imagen (100% barra de progreso)
+  // se llama a esta función
+  const handleUploadComplete = async (base64Image: string) => {
+    try {
+
+      if (isCreatingProjectRef.current) return false;                     // Evita ejecuciones múltiples simultáneas
+      isCreatingProjectRef.current = true;
+
+      const newId = Date.now().toString();                                // Genera un ID único y un nombre temporal para el proyecto
+      const name = `Residence ${newId}`;
+
+      const newItem = {                                                   // Crea un objeto con los datos iniciales del proyecto
+        id: newId, name, sourceImage: base64Image,
+        renderedImage: undefined,
+        timestamp: Date.now()
+      }
+
+      const saved = await createProject({                                 // Llama a la acción para crear el proyecto
+        item: newItem,
+        visibility: 'private'
+      });
+
+      if (!saved) {
+        console.error("Failed to create project");
+        return false;
+      }
+
+      setProjects((prev) => [saved, ...prev]);                            // Actualiza el estado local de proyectos
+
+
+      navigate(`/visualizer/${newId}`, {                                  // Redirige al usuario a la página del visualizador con el nuevo proyecto
+        state: {
+          initialImage: saved.sourceImage,
+          initialRendered: saved.renderedImage || null,
+          name
+        }
+      });
+
+      return true;
+    } finally {
+      isCreatingProjectRef.current = false;
+    }
+  }
+
   return (
     <div className="home">
       <Navbar />
