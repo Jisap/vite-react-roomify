@@ -10,35 +10,30 @@ interface UploadProps {
 
 const Upload = ({ onComplete }: UploadProps) => {
 
-  // Estado para almacenar el archivo seleccionado, si se está arrastrando sobre la zona, y el progreso numérico (0-100)
-  const [file, setFile] = useState<File | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [progress, setProgress] = useState(0);
 
-  // Referencias para manejar los temporizadores de la animación de progreso y limpieza
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [file, setFile] = useState<File | null>(null);                          // Estado para almacenar el archivo seleccionado
+  const [isDragging, setIsDragging] = useState(false);                          // Estado para indicar si se está arrastrando sobre la zona
+  const [progress, setProgress] = useState(0);                                  // Estado para el progreso numérico (0-100)
 
-  // Obtiene el estado de autenticación desde el contexto global (definido en root.tsx)
-  const { isSignedIn } = useOutletContext<AuthContext>();
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);                      // Referencia para el temporizador de progreso
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);                       // Referencia para el temporizador de redirección
 
-  // Lógica principal para procesar el archivo una vez seleccionado o soltado
-  const processFile = useCallback((file: File) => {
+  const { isSignedIn } = useOutletContext<AuthContext>();                       // Obtiene el estado de autenticación desde el contexto global (definido en root.tsx)                   
+
+  const processFile = useCallback((file: File) => {                             // Lógica principal para procesar el archivo una vez seleccionado o soltado 
     if (!isSignedIn) return;
 
     setFile(file);
     setProgress(0);
 
-    // Usamos FileReader para leer el contenido del archivo localmente
-    const reader = new FileReader();
+    const reader = new FileReader();                                            // Usamos FileReader para leer el contenido del archivo localmente
     reader.onerror = () => {
       setFile(null);
       setProgress(0);
     };
 
-    // Cuando la lectura del archivo termina (se ha cargado en memoria)
-    reader.onloadend = () => {
-      const base64Data = reader.result as string;
+    reader.onloadend = () => {                                                  // Cuando la lectura del archivo termina (se ha cargado en memoria)
+      const base64Data = reader.result as string;                               // Obtenemos el resultado de la lectura como una cadena base64
 
       // Inicia una simulación de progreso visual
       // intervalRef almacena valores que necesitan sobrevivir entre 
@@ -47,14 +42,14 @@ const Upload = ({ onComplete }: UploadProps) => {
       intervalRef.current = setInterval(() => {
         setProgress((prev) => {
           const next = prev + PROGRESS_INCREMENT;
-          // Si la simulación llega al 100%
-          if (next >= 100) {
-            if (intervalRef.current) {
-              clearInterval(intervalRef.current);
-              intervalRef.current = null;
+
+          if (next >= 100) {                                                    // Si la simulación llega al 100%
+            if (intervalRef.current) {                                          // Si el temporizador está activo
+              clearInterval(intervalRef.current);                               // Detiene el temporizador
+              intervalRef.current = null;                                       // Limpia la referencia
             }
-            // Espera un momento (REDIRECT_DELAY_MS) antes de ejecutar la acción final (onComplete)
-            timeoutRef.current = setTimeout(() => {
+
+            timeoutRef.current = setTimeout(() => {                             // Espera un momento (REDIRECT_DELAY_MS) antes de ejecutar la acción final (onComplete) 
               onComplete?.(base64Data);
               timeoutRef.current = null;
             }, REDIRECT_DELAY_MS);
@@ -64,9 +59,10 @@ const Upload = ({ onComplete }: UploadProps) => {
         });
       }, PROGRESS_INTERVAL_MS);
     };
-    // Inicia la lectura del archivo como una URL de datos (Base64)
-    reader.readAsDataURL(file);
+
+    reader.readAsDataURL(file);                                                 // Inicia la lectura del archivo como una URL de datos (Base64)
   }, [isSignedIn, onComplete]);
+
 
   // Manejadores de eventos para Drag & Drop (Arrastrar y Soltar)
   const handleDragOver = (e: React.DragEvent) => {
@@ -85,11 +81,10 @@ const Upload = ({ onComplete }: UploadProps) => {
 
     if (!isSignedIn) return;
 
-    const droppedFile = e.dataTransfer.files[0];
-    // Validación simple del tipo de archivo
-    const allowedTypes = ['image/jpeg', 'image/png'];
-    if (droppedFile && allowedTypes.includes(droppedFile.type)) {
-      processFile(droppedFile);
+    const droppedFile = e.dataTransfer.files[0];                   // Archivo dropeado
+    const allowedTypes = ['image/jpeg', 'image/png'];              // Validación simple del tipo de archivo
+    if (droppedFile && allowedTypes.includes(droppedFile.type)) {  // Si se dropeo un archivo y es válido
+      processFile(droppedFile);                                    // procesamos el archivo
     }
   };
 
