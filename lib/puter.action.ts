@@ -134,3 +134,26 @@ export const getProjectById = async ({ id }: { id: string }) => {
     return null;
   }
 };
+
+export const getProjects = async () => {
+  if (!PUTER_WORKER_URL) {
+    console.warn('Missing VITE_PUTER_WORKER_URL; skip history fetch;');
+    return []
+  }
+
+  try {
+    const response = await puter.workers.exec(`${PUTER_WORKER_URL}/api/projects/list`, { method: 'GET' });
+
+    if (!response.ok) {
+      console.error('Failed to fetch history', await response.text());
+      return [];
+    }
+
+    const data = (await response.json()) as { projects?: DesignItem[] | null };
+
+    return Array.isArray(data?.projects) ? data?.projects : [];
+  } catch (e) {
+    console.error('Failed to get projects', e);
+    return [];
+  }
+}
